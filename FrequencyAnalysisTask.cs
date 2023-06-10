@@ -9,44 +9,32 @@ namespace TextAnalysis
     {
         public static Dictionary<string, string> GetMostFrequentNextWords(List<List<string>> text)
         {
-            var result = new Dictionary<string, string>(); // конечный результат
-            var wordThereList = new List<int>(); // лист для проверки ключ значений
 
 
-            foreach (var wordList in text) // перебераем листы в тексте
-            {
-                for (int words = 0; words < wordList.Count - 1; words++) // перебераем слова из листа для 2 разрядного слова
-                {
-                    var t = ByteMass(wordList[words]) + ByteMass(wordList[words + 1]);
-                    if (!wordThereList.Contains(t))
-                    {
-                        result.Add(wordList[words], wordList[words + 1]);
-                        wordThereList.Add(t);
-                    }
-                    else
-                        continue;
-                }
-                for (int words = 0; words < wordList.Count - 2; words++)// перебераем слова из листа для 3 разрядного слова
-                {
-                    var t = ByteMass(wordList[words]) + ByteMass(wordList[words + 1]) + ByteMass(wordList[words + 2]);
-                    if (!wordThereList.Contains(t))
-                    {
-                        result.Add(wordList[words] + " " + wordList[words + 1], wordList[words + 2]);
-                        wordThereList.Add(t);
-                    }
-                    else
-                        continue;
-                }
-            }
+            var bigrams = text.Where(t => t.Count > 1)
+            .SelectMany(sentence => sentence
+            .Zip(sentence.Skip(1), (key, value) => (key, value)));
 
-            return result;
+
+            var trigrams = text.Where(t => t.Count > 2)
+            .SelectMany(sentence => sentence
+            .Zip(sentence.Skip(1), (first, second) => first + " " + second)
+            .Zip(sentence.Skip(2), (key, value) => (key, value)));
+            
+            return bigrams
+                .Concat(trigrams)
+                .ToLookup(x => x.key, x => x.value)
+                .ToDictionary(x => x.Key, x => x.GetMaxValue());
         }
-        private static int ByteMass(string oneWord) // расчет массы слова
+
+
+        private static string GetMaxValue(this IGrouping<string, string> values)
         {
-            int t = 0;
-            foreach (var v in ASCIIEncoding.UTF8.GetBytes(oneWord))
-                t += v;
-            return t;
+            return values
+                .ToLookup(x => values.Count(y => y == x))
+                .OrderBy(x => x.Key)
+                .Last()
+                .Aggregate((first, second) => string.CompareOrdinal(first, second) < 0 ? first : second);
         }
     }
 }
