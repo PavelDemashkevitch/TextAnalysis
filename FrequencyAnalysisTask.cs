@@ -11,20 +11,20 @@ namespace TextAnalysis
         {
 
 
-            var bigrams = text.Where(t => t.Count > 1)
+            IEnumerable<(string key, string value)> bigrams = text.Where(t => t.Count > 1)
             .SelectMany(sentence => sentence
             .Zip(sentence.Skip(1), (key, value) => (key, value)));
 
-
-            var trigrams = text.Where(t => t.Count > 2)
+            IEnumerable<(string key,string value)> trigrams = text.Where(t => t.Count > 2)
             .SelectMany(sentence => sentence
             .Zip(sentence.Skip(1), (first, second) => first + " " + second)
             .Zip(sentence.Skip(2), (key, value) => (key, value)));
-            
-            return bigrams
+
+            var res1 = bigrams
                 .Concat(trigrams)
                 .ToLookup(x => x.key, x => x.value)
                 .ToDictionary(x => x.Key, x => x.GetMaxValue());
+            return res1;
         }
 
 
